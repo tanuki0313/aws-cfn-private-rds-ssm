@@ -6,7 +6,7 @@ CloudFormationを用いたEC2、RDS、SSMの自動構築プレート
 
 ## 構成 / アーキテクチャ
 
-![構成図](images/Cfn RDS_SSM.png)
+![構成図](images/Cfn_RDS_SSM.png)
 
 ## 検証時の構成
 
