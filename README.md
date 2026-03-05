@@ -2,7 +2,7 @@
 CloudFormationを用いたEC2、RDS、SSMの自動構築テンプレート
 
 ## 概要（何を作ったか・目的）
-CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM から EC2 に接続して RDS を操作できる環境を自動構築するテンプレートを作成しました。
+CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM(Session Manager) から EC2 に接続して RDS を操作できる環境を自動構築するテンプレートを作成しました。
 
 本テンプレートの目的は以下です：
 
@@ -15,7 +15,7 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM から EC
 
 ## 検証時の構成
 - RDS は Private Subnet に配置  
-- SSM 経由で EC2 に接続し、RDS を操作可能  
+- SSM(Session Manager) 経由で EC2 に接続し、RDS を操作可能  
 - RDS は Multi-AZ 構成で障害発生時は自動的にスタンバイ AZ へフェイルオーバー  
 - RDS の Security Group は特定 EC2 からの接続のみ許可しており、セキュリティも考慮
 
@@ -40,7 +40,7 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM から EC
 
 ### ネットワーク
 - **EC2 Security Group**  
-  - SSM および RDS への接続設定
+  - アウトバウンド全許可(セキュリティ制御はRDSインバウンド SG側で実施)
 - **RDS Security Group**  
   - 特定 EC2 SG からの通信のみ許可
 - **IGW**  
@@ -56,8 +56,7 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM から EC
 本テンプレートでは、CloudFormation を用いて以下を自動構築します：
 
 - VPC、Public / Private Subnet  
-- Security Group（EC2 / RDS）  
-- SSM（Session Manager）  
+- Security Group（EC2 / RDS）    
 - IGW、ルートテーブル  
 - IAM ロール  
 - EC2、RDS（MySQL）
@@ -66,6 +65,16 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM から EC
 - DB の認証情報は Secrets Manager で管理  
 - DB Subnet Group に複数 AZ を指定、`MultiAZ: true` で高可用性を確保  
 - スタックはネットワーク、セキュリティ、Secrets Manager、EC2、RDS に分割し、役割を明確化
+
+## デプロイ方法
+1. CloudFormation でスタックを作成
+2. **作成順序**  
+   1. `network-stack`  
+   2. `security-stack`  
+   3. `secrets-stack`  
+   4. `ec2-stack`  
+   5. `rds-stack`
+3. SSM 経由で EC2 に接続して RDS にアクセス
 
 ## 工夫・学習したポイント
 - **Parameters** を活用し、異なる環境でも再利用可能なテンプレート設計  
