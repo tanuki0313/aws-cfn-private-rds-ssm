@@ -6,7 +6,7 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM(Session M
 
 本テンプレートの目的は以下です：
 
-- SSM（AWS Systems Manager）や IaC（Infrastructure as Code）の理解  
+- SSM(Session Manager)や IaC（Infrastructure as Code）の理解  
 - VPC、サブネット、EC2、RDS のネットワーク設計とセキュリティ設計の理解
 
 ## 構成 / アーキテクチャ
@@ -44,7 +44,7 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM(Session M
 - **RDS Security Group**  
   - 特定 EC2 SG からの通信のみ許可
 - **IGW**  
-  - Public Subnet 内 EC2 が外部通信および SSM で接続できるよう設定
+  - Public Subnet 内 EC2 が外部通信および SSM(Session Manager) で接続できるよう設定
 - **ルートテーブル**  
   - IGW と VPC を接続するルートを設定
 
@@ -74,7 +74,7 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM(Session M
    3. `secrets-stack`  
    4. `ec2-stack`  
    5. `rds-stack`
-3. SSM 経由で EC2 に接続して RDS にアクセス
+3. SSM(Session Manager) 経由で EC2 に接続して RDS にアクセス
    以下RDS接続コマンド
    mysql -h <RDSエンドポイント> -P 3306 -u <ユーザ名> -p 
 
@@ -84,7 +84,7 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM(Session M
 - **Secrets Manager による認証情報管理**でテンプレート内にパスワードを平文で記載しない  
 - **Outputs 定義**で RDS エンドポイントや Secret ARN を即座に参照可能  
 - スタックごとに処理を分割し、役割を明確化  
-- **SSM 経由接続**により SSH よりセキュリティを考慮  
+- **SSM(Session Manager) 経由接続**により SSH よりセキュリティを考慮  
 - **RDS SG の制限**により特定 EC2 からの通信のみ許可
 
 ## 開発中に直面した課題と解決策
