@@ -78,7 +78,8 @@ CloudFormation を用いて、EC2、RDS、SSM を組み合わせ、SSM(Session M
    以下 RDS 接続コマンド:
    ```bash
    mysql -h <RDSエンドポイント> -P 3306 -u <ユーザ名> -p
-
+   ```
+   
 ## 工夫・学習したポイント
 - **Parameters** を活用し、異なる環境でも再利用可能なテンプレート設計  
 - **Multi-AZ 有効化**による高可用性構成  
