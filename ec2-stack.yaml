@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  EC2 stack
+  - EC2 instance managed by SSM
+  - No SSH, no key pair
+  - Used to operate / connect to RDS
+
+######################################
+# Parameters
+######################################
+Parameters:
+  EC2InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: EC2 instance type (free tier friendly)
+
+######################################
+# Resources
+######################################
+Resources:
+
+  ######################################
+  # EC2 Instance
+  ######################################
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      # AMI（最新の Amazon Linux 2）
+      ImageId: !Sub "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}"
+
+      # インスタンスタイプ
+      InstanceType: !Ref EC2InstanceType
+
+      # Public subnet に配置（SSM + outbound 通信のため）
+      SubnetId: !ImportValue Network-PublicSubnetId
+
+      # security-stack で作成した EC2 用 SG を利用
+      SecurityGroupIds:
+        - !ImportValue EC2SecurityGroupId
+
+      # EC2 が引き受ける IAM ロール（SSM 用）
+      IamInstanceProfile: !ImportValue EC2InstanceProfileName
+
+      # SSH は使わないため KeyName は指定しない
+      # KeyName: （未設定）
+
+      # タグ
+      Tags:
+        - Key: Name
+          Value: ec2-ssm-instance
+
+######################################
+# Outputs
+######################################
+Outputs:
+  ######################################
+  # EC2 Instance ID
+  ######################################
+  EC2InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref EC2Instance
+
+  ######################################
+  # EC2 Private IP (RDS 接続確認用)
+  ######################################
+  EC2PrivateIp:
+    Description: Private IP address of EC2
+    Value: !GetAtt EC2Instance.PrivateIp

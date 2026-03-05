@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Security stack for EC2 access using SSM (no SSH, no bastion)
+
+########################################
+# Security Group
+########################################
+Resources:
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow outbound HTTPS and DB access only
+      # network-stack で作成した VPC を参照
+      VpcId: !ImportValue Network-VpcId
+      
+      # インバウンド通信は一切許可しない
+      # → SSH(22) も HTTP(80) も開けない
+      SecurityGroupIngress: []
+
+      # アウトバウンド通信は全許可しているがRDS SGの方で制限している
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+      Tags:
+        - Key: Name
+          Value: ec2-ssm-sg
+          
+  # RDS Security Group
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for RDS
+      VpcId: !ImportValue Network-VpcId
+
+      # インバウンドルール
+      # → この EC2 SG が付いているインスタンスからのMySQL(3306) 通信だけを許可する
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !Ref EC2SecurityGroup
+
+      # アウトバウンドルール
+      # → 通常は全許可（RDS から外向き通信はほぼ使わない）
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+########################################
+# IAM Role for SSM
+########################################
+
+  EC2SSMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ec2-ssm-role
+
+      # EC2 がこのロールを引き受けられるようにする設定
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            # EC2だけがこのロールを使用してよいと許可
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            # このロールを引き受ける（Assume）ことを許可
+            Action:
+              - sts:AssumeRole
+
+      # SSM を使うための AWS 管理ポリシー
+      ManagedPolicyArns:
+        # Session Manager / Run Command などに必要
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+########################################
+# IAM Instance Profile
+########################################
+
+  # EC2が引き受けるIAMロールを設定
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: ec2-ssm-instance-profile
+      Roles:
+        - !Ref EC2SSMRole
+
+########################################
+# Outputs
+########################################
+
+Outputs:
+  #他のスタック（EC2 stack）からEC2用Security Group IDを参照可能にする
+  EC2SecurityGroupId:
+    Description: Security Group for EC2 (SSM only)
+    Value: !Ref EC2SecurityGroup
+    Export:
+      Name: EC2SecurityGroupId
+  #他のスタック（RDS stack）からRDS用Security Group IDを参照可能にする
+  RDSSecurityGroupId:
+    Description: Security Group for RDS
+    Value: !Ref RDSSecurityGroup
+    Export:
+      Name: RDSSecurityGroupId
+      
+  #他のスタック（EC2 stack）からEC2用EC2InstanceProfileを参照可能にする
+  EC2InstanceProfileName:
+    Description: Instance profile for EC2 to use SSM
+    Value: !Ref EC2InstanceProfile
+    Export:
+      Name: EC2InstanceProfileName
